@@ -1,0 +1,58 @@
+## Unity
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Mm]emoryCaptures/
+[Rr]ecordings/
+UserSettings/
+Artifacts/
+*.csproj
+*.pidb
+*.suo
+*.sln
+*.user
+*.userprefs
+*.unitypackage
+*.booproj
+*.svd
+
+# VS / JetBrains / OS
+.vs/
+.vscode/
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Crash / Reports
+sysinfo.txt
+
+# Addressables build cache
+ServerData/
+*/AddressablesBuildTEP.json
+
+# Rider plugin
+/.idea/
+
+# Gradle / Android
+.gradle/
+*.apk
+*.aab
+.gradle/
+*.keystore
+*.jks
+
+# Cache
+/.gradle/
+/DerivedData/
+/ExportedObj/
+/obj/
+
+# Ignore .meta files? NO — ¡se versionan!
+# *.meta  <-- NO
+
+# Builds externos (opcional)
+/Builds*/
