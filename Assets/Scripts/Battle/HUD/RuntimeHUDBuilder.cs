@@ -1,22 +1,23 @@
 using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro; // TextMeshPro
+using TMPro;
+using UnityEngine.EventSystems;
 
 namespace RPG.Battle
 {
     /// HUD runtime sin prefabs:
     ///   - Nombre (TMP) con outline
-    ///   - Barras HP/ATB con Image.fillAmount y animación suave
-    ///   - Layout paramétrico (sin solapes)
+    ///   - Barras HP/ATB animadas
+    ///   - Selección de objetivos clicando filas (resaltado amarillo)
     public class RuntimeHUDBuilder : MonoBehaviour
     {
         public TurnManager turnManager;
 
         [Header("Posición y ancho")]
-        public Vector2 startPos = new Vector2(16, -16); // esquina sup-izq
-        public float rowWidth   = 520f;                 // ancho de cada fila
-        public float rowSpacing = 10f;                  // separación entre filas
+        public Vector2 startPos = new Vector2(16, -16);
+        public float rowWidth   = 520f;
+        public float rowSpacing = 10f;
 
         [Header("Colores")]
         public Color playerColor  = new Color(0.3f, 1f, 0.3f, 1f);
@@ -25,18 +26,19 @@ namespace RPG.Battle
         public Color atbFillColor = new Color(0.2f, 0.6f, 1f, 1f);
         public Color barBgColor   = new Color(1f, 1f, 1f, 0.15f);
 
-        // --- Métricas de layout (ajústalas a tu gusto) ---
-        const float NAME_H   = 28f; // alto del texto
-        const float PAD_TOP  = 2f;  // margen superior dentro de la fila
-        const float GAP      = 6f;  // espacio entre nombre/HP y HP/ATB
+        // Layout métricas
+        const float NAME_H   = 28f;
+        const float PAD_TOP  = 2f;
+        const float GAP      = 6f;
         const float HP_H     = 18f;
         const float ATB_H    = 12f;
 
         private RectTransform _root;
+        private BattleInput _input;
 
         private void Awake()
         {
-            // Canvas (Overlay) + Scaler (1280x720)
+            // Canvas
             var canvas = Object.FindFirstObjectByType<Canvas>();
             if (canvas == null)
             {
@@ -49,7 +51,7 @@ namespace RPG.Battle
                 scaler.matchWidthOrHeight = 0.5f;
             }
 
-            // Contenedor raíz del HUD
+            // HUD root
             var rootGo = new GameObject("HUD_RuntimeRoot", typeof(RectTransform));
             rootGo.transform.SetParent(canvas.transform, false);
             _root = rootGo.GetComponent<RectTransform>();
@@ -57,6 +59,14 @@ namespace RPG.Battle
             _root.anchorMax = new Vector2(0, 1);
             _root.pivot     = new Vector2(0, 1);
             _root.anchoredPosition = startPos;
+
+            // Asegura BattleInput
+            _input = Object.FindFirstObjectByType<BattleInput>();
+            if (_input == null)
+            {
+                var go = new GameObject("BattleInput");
+                _input = go.AddComponent<BattleInput>();
+            }
 
             if (turnManager != null) turnManager.UnitsChanged += Rebuild;
             Rebuild();
@@ -80,21 +90,19 @@ namespace RPG.Battle
             ClearChildren();
 
             var ordered = turnManager.Units
-                .OrderBy(u => u.Team == Team.Enemy) // Player primero
+                .OrderBy(u => u.Team == Team.Enemy)
                 .ToList();
 
             float y = 0f;
             foreach (var u in ordered)
             {
                 float usedHeight = CreateRow(_root, u, new Vector2(0, -y));
-                y += usedHeight + rowSpacing; // separación basada en altura real
+                y += usedHeight + rowSpacing;
             }
         }
 
-        /// Crea una fila y devuelve la altura usada (para espaciar correctamente)
         private float CreateRow(RectTransform parent, UnitRuntime u, Vector2 offset)
         {
-            // Altura total calculada
             float rowH = PAD_TOP + NAME_H + GAP + HP_H + GAP + ATB_H;
 
             // Row container
@@ -107,7 +115,7 @@ namespace RPG.Battle
             rt.anchoredPosition = offset;
             rt.sizeDelta = new Vector2(rowWidth, rowH);
 
-            // --- Barras (orden primero para control de dibujo) ---
+            // --- Barras ---
             float yHP  = -(PAD_TOP + NAME_H + GAP);
             float yATB = -(PAD_TOP + NAME_H + GAP + HP_H + GAP);
 
@@ -117,7 +125,7 @@ namespace RPG.Battle
             var atbBg   = CreateBar(rt, "ATB_BG", new Vector2(0, yATB), rowWidth, ATB_H, barBgColor,  false);
             var atbFill = CreateBar(atbBg, "ATB_Fill", Vector2.zero,    rowWidth, ATB_H, atbFillColor, true);
 
-            // --- Nombre arriba ---
+            // --- Nombre ---
             var nameGo = new GameObject("Name", typeof(RectTransform));
             var nameRt = nameGo.GetComponent<RectTransform>();
             nameRt.SetParent(rt, false);
@@ -135,18 +143,47 @@ namespace RPG.Battle
             nameText.text  = $"{u.Def.displayName} [{u.Team}]";
             nameText.outlineColor = new Color(0f, 0f, 0f, 0.9f);
             nameText.outlineWidth = 0.2f;
-            nameText.textWrappingMode = TextWrappingModes.NoWrap; // evita warning obsoleto
-            nameRt.SetAsLastSibling(); // asegura que el nombre quede encima
+            nameText.textWrappingMode = TextWrappingModes.NoWrap;
+            nameRt.SetAsLastSibling();
 
-            // Updater
+            // --- Hit-area clicable + highlight ---
+            var hitGo = new GameObject("HitArea", typeof(RectTransform), typeof(Image));
+            var hitRt = hitGo.GetComponent<RectTransform>();
+            hitRt.SetParent(rt, false);
+            hitRt.anchorMin = new Vector2(0, 1);
+            hitRt.anchorMax = new Vector2(1, 1);
+            hitRt.pivot     = new Vector2(0, 1);
+            hitRt.anchoredPosition = Vector2.zero;
+            hitRt.sizeDelta = new Vector2(rowWidth, rowH);
+
+            var hitImg = hitGo.GetComponent<Image>();
+            hitImg.color = new Color(1, 1, 1, 0.001f);
+            hitImg.raycastTarget = true;
+
+            var hlGo = new GameObject("Highlight", typeof(RectTransform), typeof(Image));
+            var hlRt = hlGo.GetComponent<RectTransform>();
+            hlRt.SetParent(rt, false);
+            hlRt.anchorMin = new Vector2(0, 1);
+            hlRt.anchorMax = new Vector2(1, 1);
+            hlRt.pivot     = new Vector2(0, 1);
+            hlRt.anchoredPosition = Vector2.zero;
+            hlRt.sizeDelta = new Vector2(rowWidth, rowH);
+            var hlImg = hlGo.GetComponent<Image>();
+            hlImg.color = new Color(1f, 0.92f, 0.2f, 0.15f);
+            hlGo.transform.SetSiblingIndex(nameRt.GetSiblingIndex());
+
+            // Updater de barras
             var updater = row.AddComponent<RowUpdater>();
             updater.Bind(u, hpFill.GetComponent<Image>(), atbFill.GetComponent<Image>());
+
+            // Click handler
+            var click = hitGo.AddComponent<RowClickHandler>();
+            click.Init(u, _input, hlImg);
 
             return rowH;
         }
 
         // ===== Helpers =====
-
         private static Sprite _whiteSprite;
         private static Sprite WhiteSprite()
         {
@@ -182,35 +219,22 @@ namespace RPG.Battle
             return rt;
         }
 
-        // ===== Updater con interpolación suave =====
+        // ===== Updater (HP/ATB interpolados) =====
         private class RowUpdater : MonoBehaviour
         {
             private UnitRuntime _u;
             private Image _hp;
             private Image _atb;
             private int _maxHp;
-
-            // valores mostrados (interpolados)
             private float _hpShown01;
             private float _atbShown01;
 
-            // velocidad de interpolación (mayor = más rápido)
             private const float HP_SPEED  = 8f;
             private const float ATB_SPEED = 14f;
 
             public void Bind(UnitRuntime u, Image hpFill, Image atbFill)
             {
-                _u  = u;
-                _hp = hpFill;
-                _atb = atbFill;
-
-                _hp.type = Image.Type.Filled;
-                _hp.fillMethod = Image.FillMethod.Horizontal;
-                _hp.fillOrigin = (int)Image.OriginHorizontal.Left;
-
-                _atb.type = Image.Type.Filled;
-                _atb.fillMethod = Image.FillMethod.Horizontal;
-                _atb.fillOrigin = (int)Image.OriginHorizontal.Left;
+                _u = u; _hp = hpFill; _atb = atbFill;
 
                 _maxHp = Mathf.Max(1, _u.StatsBase.HP);
 
@@ -236,10 +260,47 @@ namespace RPG.Battle
                 if (_u.IsDead) _hp.color = Color.red;
             }
 
-            // Lerp “suave” e independiente del framerate
             private float SmoothLerp(float current, float target, float speed)
             {
                 return Mathf.Lerp(current, target, 1f - Mathf.Exp(-speed * Time.deltaTime));
+            }
+        }
+
+        // ===== Click handler para selección =====
+        private class RowClickHandler : MonoBehaviour, IPointerClickHandler
+        {
+            private UnitRuntime _unit;
+            private BattleInput _input;
+            private Image _highlight;
+
+            public void Init(UnitRuntime unit, BattleInput input, Image highlight)
+            {
+                _unit = unit;
+                _input = input;
+                _highlight = highlight;
+
+                if (_input != null)
+                    _input.OnTargetChanged += HandleChanged;
+
+                HandleChanged(_input != null ? _input.SelectedTarget : null);
+            }
+
+            public void OnPointerClick(PointerEventData eventData)
+            {
+                if (_input == null || _unit == null) return;
+                if (_unit.Team == Team.Enemy && !_unit.IsDead)
+                    _input.SetTarget(_unit);
+            }
+
+            private void HandleChanged(UnitRuntime selected)
+            {
+                if (_highlight == null) return;
+                _highlight.enabled = (selected == _unit);
+            }
+
+            private void OnDestroy()
+            {
+                if (_input != null) _input.OnTargetChanged -= HandleChanged;
             }
         }
     }

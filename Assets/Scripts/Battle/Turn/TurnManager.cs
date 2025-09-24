@@ -9,18 +9,21 @@ namespace RPG.Battle
     {
         [Range(0.001f, 0.1f)] public float atbFactor = 0.01f;
 
+        // NUEVO: referencia al input (así el HUD puede fijar objetivo)
+        public BattleInput input;
+
         private readonly List<UnitRuntime> _units = new();
         public IReadOnlyList<UnitRuntime> Units => _units;
 
-        // Eventos para que el controlador de stage avance oleadas
         public event Action OnEnemiesDefeated;
         public event Action OnPlayersDefeated;
-        public event System.Action UnitsChanged;
+        public event Action UnitsChanged;
+
         public void SetUnits(List<UnitRuntime> list)
         {
             _units.Clear();
             if (list != null) _units.AddRange(list);
-            UnitsChanged?.Invoke(); // <-- notifica al HUD
+            UnitsChanged?.Invoke();
         }
 
         private void Update()
@@ -32,8 +35,6 @@ namespace RPG.Battle
             if (acting != null)
             {
                 ExecuteTurn(acting);
-
-                // tras cada acción, evalúa estado de equipos
                 CheckTeamsStatus();
             }
         }
@@ -41,26 +42,39 @@ namespace RPG.Battle
         private void ExecuteTurn(UnitRuntime u)
         {
             var skill = u.Skills.FirstOrDefault(s => s.Ready);
-
-            u.StartTurn(); // baja CD antes de decidir
+            u.StartTurn();
 
             if (skill == null)
             {
-                // Sin skill lista → pasar turno
                 u.ResetAtb();
                 return;
             }
 
-            var targets = _units.Where(x => x.Team != u.Team && !x.IsDead).Take(1).ToList();
+            // Elegir objetivo
+            UnitRuntime target = null;
+
+            // Si es jugador y hay selección válida, úsala
+            if (u.Team == Team.Player && input != null && input.IsValidEnemyTarget(input.SelectedTarget, Team.Player))
+                target = input.SelectedTarget;
+
+            // Si no hay seleccion válida, toma el primer enemigo vivo
+            if (target == null)
+                target = _units.FirstOrDefault(x => x.Team != u.Team && !x.IsDead);
+
+            var targets = new List<UnitRuntime>();
+            if (target != null) targets.Add(target);
             if (targets.Count == 0) { u.ResetAtb(); return; }
 
             skill.Use(u, targets);
             u.EndTurn();
             u.ResetAtb();
 
-            // Log de estado para depurar avance de oleadas
             int aliveEnemies = _units.Count(x => x.Team == Team.Enemy && !x.IsDead);
             Debug.Log($"[PostTurn] Enemigos vivos: {aliveEnemies}");
+
+            // Si el objetivo murió, limpia la selección
+            if (input != null && target != null && target.IsDead)
+                input.ClearIf(target);
         }
 
         private void CheckTeamsStatus()
@@ -71,16 +85,8 @@ namespace RPG.Battle
             bool enemiesAllDead = enemiesAlive == 0;
             bool playersAllDead = playersAlive == 0;
 
-            if (enemiesAllDead)
-            {
-                Debug.Log("<color=yellow>OnEnemiesDefeated()</color>");
-                OnEnemiesDefeated?.Invoke();
-            }
-            if (playersAllDead)
-            {
-                Debug.Log("<color=red>OnPlayersDefeated()</color>");
-                OnPlayersDefeated?.Invoke();
-            }
+            if (enemiesAllDead) OnEnemiesDefeated?.Invoke();
+            if (playersAllDead) OnPlayersDefeated?.Invoke();
         }
     }
 }
