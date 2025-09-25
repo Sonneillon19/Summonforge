@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: abd97c4253e782d43ade626dd0ceabad, type: 3}
+  m_Name: stun
+  m_EditorClassIdentifier: 
+  effectId: stun
+  displayName: Aturdido
+  description: 
+  icon: {fileID: -1762267669, guid: dba6c86a9a9d9c647b15ea3168db3163, type: 3}
+  type: 3
+  uiPriority: 10
+  tickTiming: 1
+  maxStacks: 10
+  isHarmful: 1
+  atkModPercent: 0
+  defModPercent: 0
+  speedModPercent: 0
+  dotPerTick: 0
+  preventsAction: 1

@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 453697fc42ec9774d9d951b1ad6fd397, type: 3}
+  m_Name: StatusBridgeConfig
+  m_EditorClassIdentifier: 
+  mappings:
+  - skillKey: Bash
+    applyTo: 0
+    chance: 60
+    durationTurns: 1
+    stacks: 1
+    effects:
+    - {fileID: 11400000, guid: d54fe241f1381754e811f29f646d7740, type: 2}
+  - skillKey: Fireball
+    applyTo: 0
+    chance: 80
+    durationTurns: 2
+    stacks: 1
+    effects:
+    - {fileID: 11400000, guid: f7d9771c84b4f594bac22fcd8c6e5b5c, type: 2}

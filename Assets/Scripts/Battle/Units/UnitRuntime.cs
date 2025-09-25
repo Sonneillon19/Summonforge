@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using RPG.Combat;
 
 namespace RPG.Battle
 {
@@ -28,5 +29,12 @@ namespace RPG.Battle
             foreach (var s in Skills) s.TickCooldown();
         }
         public void EndTurn() {}
+        
+        public CombatUnit Combat { get; private set; }
+
+        public void BindCombat(CombatUnit cu)
+        {
+            Combat = cu;
+        }
     }
 }
