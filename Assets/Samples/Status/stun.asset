@@ -15,7 +15,7 @@ MonoBehaviour:
   effectId: stun
   displayName: Aturdido
   description: 
-  icon: {fileID: -1762267669, guid: dba6c86a9a9d9c647b15ea3168db3163, type: 3}
+  icon: {fileID: -344199527, guid: dba6c86a9a9d9c647b15ea3168db3163, type: 3}
   type: 3
   uiPriority: 10
   tickTiming: 1

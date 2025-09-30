@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 using RPG.Battle;
 using RPG.Combat;
 
@@ -8,7 +9,7 @@ public class DevStatusPanel : MonoBehaviour
     public StatusEffectSO burn;
     public StatusEffectSO stun;
 
-    UnitRuntime CurrentActor()
+    UnitRuntime CurrentActorATB()
     {
         foreach (var u in manager.Units)
             if (!u.IsDead && u.Atb >= 1f) return u;
@@ -23,10 +24,9 @@ public class DevStatusPanel : MonoBehaviour
         return null;
     }
 
-    // Botón: aplicar Burn al primer enemigo del actor
     public void Btn_ApplyBurnToEnemy()
     {
-        var actor  = CurrentActor();
+        var actor = CurrentActorATB();
         var target = FirstEnemyFor(actor);
         if (actor?.Combat && target?.Combat && burn)
         {
@@ -35,10 +35,9 @@ public class DevStatusPanel : MonoBehaviour
         }
     }
 
-    // Botón: aplicar Stun al actor (para probar control)
     public void Btn_ApplyStunToActor()
     {
-        var actor = CurrentActor();
+        var actor = CurrentActorATB();
         if (actor?.Combat && stun)
         {
             actor.Combat.Status.Apply(stun, 1, 1, actor.Combat);
@@ -46,9 +45,24 @@ public class DevStatusPanel : MonoBehaviour
         }
     }
 
-    // Botón: terminar turno
+    // ✅ Botón: terminar turno
     public void Btn_EndTurn()
     {
-        manager.EndTurn();
+        if (manager.flow == BattleFlow.ManualTurns)
+        {
+            // En el loop manual esto resolverá el turno actual (acción “pasar”)
+            manager.SubmitPlayerAction(-1, null);
+            return;
+        }
+
+        // ATB: termina el turno del actor activo
+        var actor = CurrentActorATB();
+        if (actor == null) return;
+
+        var cu = actor.Combat;
+        cu?.Status?.Tick(ApplyTiming.PerTurnEnd);
+        actor.EndTurn();
+        actor.ResetAtb();
+        Debug.Log("[DEV] EndTurn (ATB).");
     }
 }

@@ -15,7 +15,7 @@ MonoBehaviour:
   skillId: fireball
   displayName: Bola de Fuego
   description: 
-  icon: {fileID: 10901, guid: 0000000000000000f000000000000000, type: 0}
+  icon: {fileID: 1875197231, guid: dba6c86a9a9d9c647b15ea3168db3163, type: 3}
   tags: 21
   element: 0
   baseCooldown: 0
@@ -27,7 +27,7 @@ MonoBehaviour:
   flatDamage: 0
   healRatio: 0
   effectsToApply:
-  - {fileID: 0}
+  - {fileID: 11400000, guid: f7d9771c84b4f594bac22fcd8c6e5b5c, type: 2}
   applyChance: 80
   durationTurns: 2
   stacksToAdd: 1

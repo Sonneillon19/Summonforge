@@ -20,7 +20,7 @@ MonoBehaviour:
     HP: 3000
     ATK: 120
     DEF: 150
-    SPD: 100
+    SPD: 40
     CritRate: 0.15
     CritDmg: 0.5
     Res: 0.15

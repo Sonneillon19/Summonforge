@@ -157,7 +157,7 @@ namespace RPG.HUD
                 // 2) Cualquier StatusIconView existente en escena (fallback QA)
                 if (iconPrefab == null)
                 {
-                    var any = FindObjectOfType<StatusIconView>(true);
+                    var any = Object.FindFirstObjectByType<StatusIconView>();
                     if (any != null) iconPrefab = any;
                 }
             }

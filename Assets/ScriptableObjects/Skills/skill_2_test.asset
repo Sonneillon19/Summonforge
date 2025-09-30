@@ -1,0 +1,18 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a2b8017cae2bf264c8973b098c1b368e, type: 3}
+  m_Name: skill_2_test
+  m_EditorClassIdentifier: 
+  skillId: skill_2_test
+  displayName: Habilidad 2
+  cdBase: 3
+  atkScale: 1

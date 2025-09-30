@@ -20,10 +20,11 @@ MonoBehaviour:
     HP: 2200
     ATK: 180
     DEF: 90
-    SPD: 115
+    SPD: 60
     CritRate: 0.2
     CritDmg: 0.7
     Res: 0.05
     Acc: 0.05
   skills:
   - {fileID: 11400000, guid: ee3d29245e4163d4e8a52feb488c5f4c, type: 2}
+  - {fileID: 11400000, guid: 989fc82942c94d24e813a5071f41a64f, type: 2}

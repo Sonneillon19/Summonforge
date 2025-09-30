@@ -15,7 +15,7 @@ MonoBehaviour:
   skillId: bash
   displayName: Golpe Aturdidor
   description: 
-  icon: {fileID: 10915, guid: 0000000000000000f000000000000000, type: 0}
+  icon: {fileID: -344199527, guid: dba6c86a9a9d9c647b15ea3168db3163, type: 3}
   tags: 21
   element: 0
   baseCooldown: 0
@@ -27,7 +27,7 @@ MonoBehaviour:
   flatDamage: 0
   healRatio: 0
   effectsToApply:
-  - {fileID: 0}
+  - {fileID: 11400000, guid: d54fe241f1381754e811f29f646d7740, type: 2}
   applyChance: 60
   durationTurns: 1
   stacksToAdd: 1

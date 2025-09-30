@@ -14,11 +14,18 @@ namespace RPG.Battle
         [Header("Equipo del jugador (elige tus UnitDef)")]
         public UnitDef[] playerTeam;
 
+        [Header("Parents (opcional, para ordenar jerarquía)")]
+        public Transform playerParent;
+        public Transform enemyParent;
+
         [Header("Opciones")]
         public float nextWaveDelay = 0.8f;
 
         private int _waveIndex = -1;
         private bool _advancing;
+
+        // llevamos el rastro de lo instanciado para limpiar entre waves
+        private readonly List<RPG.Combat.CombatUnit> _spawnedCombats = new();
 
         private void Awake()
         {
@@ -61,25 +68,36 @@ namespace RPG.Battle
                 return;
             }
 
+            // 0) limpiar lo instanciado en la wave anterior
+            CleanupSpawned();
+
             var wave = stage.waves[_waveIndex];
-            var list = new List<UnitRuntime>();
+            var runtimes = new List<UnitRuntime>();
 
             // 1) Construir party del jugador
             foreach (var p in playerTeam.Where(p => p != null))
-                list.Add(CreateRuntimeFromDef(p, Team.Player));
+                runtimes.Add(CreateRuntimeFromDef(p, Team.Player));
 
             // 2) Spawns de la oleada (enemigos)
             foreach (var spawn in wave.spawns)
             {
                 if (spawn.unit == null || spawn.count <= 0) continue;
                 for (int i = 0; i < spawn.count; i++)
-                    list.Add(CreateRuntimeFromDef(spawn.unit, spawn.team));
+                    runtimes.Add(CreateRuntimeFromDef(spawn.unit, spawn.team));
             }
 
-            turnManager.SetUnits(list);
-            Debug.Log($"<b>Wave {_waveIndex + 1}/{stage.waves.Length}</b> cargada. Aliados: {list.Count(u=>u.Team==Team.Player)} | Enemigos: {list.Count(u=>u.Team==Team.Enemy)}");
+            // IMPORTANTE: ahora los runtimes ya traen Combat enlazado
+            turnManager.SetUnits(runtimes);
+
+            Debug.Log(
+                $"<b>Wave {_waveIndex + 1}/{stage.waves.Length}</b> cargada. " +
+                $"Aliados: {runtimes.Count(u => u.Team == Team.Player)} | " +
+                $"Enemigos: {runtimes.Count(u => u.Team == Team.Enemy)}");
         }
 
+        /// <summary>
+        /// Crea un UnitRuntime y LE ENLAZA un CombatUnit (instanciando prefab si existe).
+        /// </summary>
         private UnitRuntime CreateRuntimeFromDef(UnitDef def, Team team)
         {
             var u = new UnitRuntime
@@ -90,7 +108,6 @@ namespace RPG.Battle
                 StatsTotal = def.baseStats
             };
 
-            // Copiar skills del SO a runtimes
             if (def.skills != null)
             {
                 foreach (var s in def.skills)
@@ -100,7 +117,47 @@ namespace RPG.Battle
                 }
             }
 
+            // Enlazar CombatUnit creado en escena
+            var cu = SpawnCombatFor(def, team);
+            u.BindCombat(cu);
+
             return u;
+        }
+        /// <summary>
+        /// Instancia un GameObject y devuelve su CombatUnit.
+        /// - Si UnitDef tiene prefab, lo usa; si no, crea un GO vacío con CombatUnit.
+        /// - Setea Team y displayName.
+        /// - Lo cuelga del parent correspondiente si se asignó.
+        /// </summary>
+        private RPG.Combat.CombatUnit SpawnCombatFor(UnitDef def, Team team)
+        {
+            // Creamos un GO simple (sin prefab) y lo colgamos del parent si existe
+            var parent = (team == Team.Player) ? playerParent : enemyParent;
+
+            string niceName = def ? def.name : "Unit";
+            var go = new GameObject($"[{team}] {niceName}");
+            if (parent != null) go.transform.SetParent(parent, false);
+
+            // Aseguramos el CombatUnit
+            var cu = go.AddComponent<RPG.Combat.CombatUnit>();
+
+            // Nombre a mostrar en HUD/UI (TurnManager usa cu.displayName)
+            cu.displayName = niceName;
+
+            // (Opcional) inicializar stats del Combat a partir de def.baseStats si quieres reflejarlos también en el Combat:
+            // cu.Stats = new StatsBlock(def.baseStats);  // depende de tu ctor/copia
+
+            _spawnedCombats.Add(cu);
+            return cu;
+        }
+        private void CleanupSpawned()
+        {
+            for (int i = _spawnedCombats.Count - 1; i >= 0; i--)
+            {
+                var cu = _spawnedCombats[i];
+                if (cu != null) Destroy(cu.gameObject);
+            }
+            _spawnedCombats.Clear();
         }
     }
 }
